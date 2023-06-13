@@ -1,0 +1,72 @@
+.app-container {
+  padding: 20px;
+  /* Add other styles for the main app container */
+}
+
+.dark-mode-button {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  padding: 10px 20px;
+  font-size: 16px;
+  background-color: #007bff;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.dark {
+  background-color: #222;
+  color: #fff;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px;
+}
+
+
+.button-group {
+  display: flex;
+  gap: 10px;
+}
+
+.logo-link {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-decoration: none;
+}
+
+.logo-image {
+  width: 100px;
+  height: 100px;
+  object-fit: contain;
+}
+
+/* .left {
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+} */
+
+button.left {
+  position: fixed;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+}
+
+
+.logo-text {
+  font-size: 36px;
+  font-weight: bold;
+  color: black;
+}
+
+
+/* Add additional styles specific to your application as needed */
+

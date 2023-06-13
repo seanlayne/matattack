@@ -1,0 +1,36 @@
+.leaderboard-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.leaderboard-table th,
+.leaderboard-table td {
+  padding: 8px;
+  text-align: left;
+  border-bottom: 1px solid #ddd;
+}
+
+.leaderboard-table th {
+  background-color: #f2f2f2;
+}
+
+.leaderboard-table tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+.leaderboard-table tr:hover {
+  background-color: #e8e8e8;
+}
+
+.leaderboard-table .rank-column {
+  width: 40px;
+}
+
+.leaderboard-table .username-column {
+  width: 150px;
+}
+
+.leaderboard-table .games-played-column,
+.leaderboard-table .total-score-column {
+  width: 100px;
+}

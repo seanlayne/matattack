@@ -1,0 +1,63 @@
+
+.player-container {
+  margin-top: 50px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+
+.player-box {
+  width: calc(50% - 10px); 
+  height: 500px;
+  /* height: 100px; */
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  margin-right: 10px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-sizing: border-box; /* Add this property to include borders in width and height calculations */
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding: 20px;
+}
+
+.player-name {
+  font-size: 18px;
+}
+
+.lobby-button-group button{
+  padding: 10px 20px;
+  background-color: #007bff;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  margin-top: 10px;
+  margin-right: 20px;
+}
+
+.lobby-button-group button:hover {
+  background-color: #0056b3;
+}
+
+#leave-button {
+  background-color: red;
+}
+
+.lobby-button-group {
+  margin-top: 50px;
+  display: flex;
+  justify-content: center;
+}
+
+.start-button:disabled {
+  background-color: #ccc; /* Change the background color to gray */
+  color: #888; /* Change the text color to a lighter gray */
+  cursor: not-allowed; /* Change the cursor to 'not-allowed' */
+}
