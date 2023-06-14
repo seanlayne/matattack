@@ -61,3 +61,18 @@
   color: #888; /* Change the text color to a lighter gray */
   cursor: not-allowed; /* Change the cursor to 'not-allowed' */
 }
+
+.roomId-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100px;
+  background-color: #f0f0f0;
+  border: 2px solid #ccc;
+  border-radius: 5px;
+}
+
+.roomId-text {
+  font-weight: bold;
+  font-size: 24px;
+}

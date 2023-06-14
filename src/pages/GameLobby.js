@@ -135,6 +135,9 @@ const GameLobby = () => {
   return (
   <div>
     <h2>Game Lobby</h2>
+    <div className="roomId-box">
+      {roomId && <span class="roomId-text"> {roomId} </span>}
+    </div>
     {message && <div className="message">{message}</div>}
     {roomData && (
       <div>
@@ -161,31 +164,6 @@ const GameLobby = () => {
     )}
   </div>
 );
-
-  return (
-    <div>
-      <h2>Game Lobby</h2>
-      {message && <div className="message">{message}</div>}
-      {roomData && (
-        <div>
-          <p>Active Players:</p>
-          <ul>
-            {roomData.players.map((player) => (
-              <li key={player}>
-                Player {player} {playerMap[player]}
-                {player === user.uid && (
-                  <button onClick={() => handlePlayerLeave(player)}>Leave</button>
-                )}
-              </li>
-            ))}
-          </ul>
-          <button onClick={handleStartGame} disabled={!isGameReady || gameStarted}>
-            {gameStarted ? 'Game Started' : 'Start Game'}
-          </button>
-        </div>
-      )}
-    </div>
-  );
-};
+}
 
 export default GameLobby;

@@ -15,6 +15,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 
 // get database instance
+// const db = getFirestore(app, { experimentalForceLongPolling: true });
 const db = getFirestore(app);
 
 // auth instance

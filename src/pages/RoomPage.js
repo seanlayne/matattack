@@ -108,6 +108,8 @@ const RoomPage = () => {
       setMessage("Please enter a valid room ID")
       return;
     }
+    if(!user)
+      return;
     addUserToRoom(roomId, user.uid)
     .then((roomJoined) => {
       if(!roomJoined) {

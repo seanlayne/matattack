@@ -1,18 +1,17 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { auth, db, getRoomFromId, getUserFromId, removeUserFromRoom, updateRoom, updateUser} from '../services/firebase';
+import { auth, db, getUserFromId, updateRoom, updateUser} from '../services/firebase';
 import { useAuthState } from 'react-firebase-hooks/auth';
-import { getFirestore, getDoc, doc, onSnapshot, updateDoc } from 'firebase/firestore';
-// import { sendPasswordResetEmail } from 'firebase/auth';
+import { doc, onSnapshot} from 'firebase/firestore';
 import './GamePage.css';
 
-const WinnerLoserElement = ({ winner }) => {
-  return (
-    <div className={winner ? 'winner-box' : 'loser-box'}>
-      <h2>{winner ? 'Round Winner' : 'Round Loser'}</h2>
-    </div>
-  );
-};
+// const WinnerLoserElement = ({ winner }) => {
+//   return (
+//     <div className={winner ? 'winner-box' : 'loser-box'}>
+//       <h2>{winner ? 'Round Winner' : 'Round Loser'}</h2>
+//     </div>
+//   );
+// };
 
 // custom hook that updates roomData on change in db
 const useRealtimeFirestore = (roomId) => {
@@ -36,8 +35,6 @@ const useRealtimeFirestore = (roomId) => {
 };
 
 const GamePage = () => {
-  console.log("----------------GamePage----------------")
-  console.log("---------------------------------------")
   const { roomId } = useParams();
   const [message, setMessage] = useState('');
   const navigate = useNavigate();
@@ -48,21 +45,25 @@ const GamePage = () => {
   const [player1Data, setPlayer1Data] = useState('');
   const [player2Data, setPlayer2Data] = useState('');
   const [listening, setListening] = useState(false);
-  const [locked, setLocked] = useState(false);
   const [winner, setWinner] = useState(null);
-  const [displayRoundResults, setDisplayRoundResults] = useState(false);
+  // const [displayRoundResults, setDisplayRoundResults] = useState(false);
   const [roundWinner, setRoundWinner] = useState(null);
-  const [advanceRound, setAdvanceRound] = useState(false);
   const [statsUpdated, setStatsUpdated] = useState(false);
   const [initDone, setInitDone] = useState(false);
   const [userInfoInitDone, setUserInfoInitDone] = useState(false);
   const [readyToAdvance, setReadyToAdvance] = useState(false);
+  const [locked, setLocked] = useState(false);
 
     useEffect(() => {
       // this effect runs when the roomData changes and sets the winner if the winner is set in roomData
       if(roomData && roomData.winner && roomData.winner !== '' && (!initDone)) {
         setWinner(roomData.winner)
-        setMessage(`${roomData.winner} won the game!`);
+        if(roomData.winner === 'Invalid')
+          setMessage('Game Invalid!');
+        else if(roomData.winner === 'Draw')
+          setMessage('Game Draw!');
+        else 
+          setMessage(`${roomData.winner} won the game!`);
         setInitDone(true);
         setLocked(true);
       }
@@ -122,6 +123,15 @@ const GamePage = () => {
     }
   }, [winner, player1Data, player2Data]);
 
+  // useEffect(() => {
+  //   // to remove lock from the room when choices are cleared in room
+  //   if(locked && roomData && roomData.attackChoice === '' && roomData.defenseChoice === '') {
+  //     // setTimeout(() => {
+  //     setLocked(false);
+  //     // }, 5000);
+  //   }
+  // }, [roomData, locked, setLocked]);
+
 
   useEffect(() => { 
     // to check whether the current user is attacking or defending 
@@ -146,165 +156,166 @@ const GamePage = () => {
     // to check whether both the users have locked their choices
     if(!roomData)
       return;
-    if(!roomData.attackChoice || roomData.attackChoice === '' || !roomData.defenseChoice || roomData.defenseChoice === '') {
-      return;
+    if(winner != null && winner !== '') {
+      console.log(`winner is ${winner}`);
+      return ;
     }
-    if(readyToAdvance)
-      return;
     console.log(`Checking to see if ready to advance round....`)
+    console.log(`readyToAdvance: ${readyToAdvance}`)
     console.log(`roomData.attackChoice: ${roomData.attackChoice}`)
     console.log(`roomData.defenseChoice: ${roomData.defenseChoice}`)
-    console.log(`readyToAdvance: ${readyToAdvance}`)
-    setReadyToAdvance(true);
-    console.log(`Ready to advance to ${roomData.roundsDone + 2} round`);
-  }, [roomData, readyToAdvance]);
+    if(locked && roomData && !readyToAdvance && roomData.attackChoice !== '' && roomData.defenseChoice !== '') {
+      console.log(`Ready to advance to ${roomData.roundsDone + 2} round`);
+      setReadyToAdvance(true);
+    }
+  }, [roomData, readyToAdvance, locked, winner]);
 
   useEffect(() => {
-    // to update scores of both users
-    if(!roomData)
-      return;
-    if(!readyToAdvance)
-      return;
-    if(!roomData.attackChoice || roomData.attackChoice === '' || !roomData.defenseChoice || roomData.defenseChoice === '') {
+    if (!roomData || !readyToAdvance) {
       return;
     }
-    if(winner !== null && winner !== '') {
+  
+    if (!roomData.attackChoice || roomData.attackChoice === '' || !roomData.defenseChoice || roomData.defenseChoice === '') {
+      return;
+    }
+  
+    if (winner !== null && winner !== '') {
       displayWinnerMessage();
-      setAdvanceRound(false);
+      setReadyToAdvance(false);
+      return;
     }
-    if(readyToAdvance && roomData && roomData.attackChoice && roomData.attackChoice !== '' && roomData.defenseChoice && roomData.defenseChoice !== '') {
-      // determine winner
-      if(roomData.attackChoice === roomData.defenseChoice) {
-        // attacker lost
-        if(toAttack) {
-          setRoundWinner(false);
+    let roundWinner_ = '';
+    if (roomData.attackChoice === roomData.defenseChoice) {
+      if (toAttack) {
+        roundWinner_ = false;
+        // setRoundWinner(false);
+      } else {
+        roundWinner_ = true;
+        // setRoundWinner(true);
+      }
+    } else {
+      if (toAttack) {
+        roundWinner_ = true;
+        // setRoundWinner(true);
+      } else {
+        roundWinner_ = false;
+        // setRoundWinner(false);
+      }
+    }
+    setRoundWinner(roundWinner_);
+    // setMessage(`You ${roundWinner_ ? "won" : "lost"} the round!`)
+    const updateScores = (roundWinner_) => {
+      console.log("Updating scores... is round winner?", roundWinner_);
+      let player1Score = roomData.scores[player1Data.uid];
+      let player2Score = roomData.scores[player2Data.uid];
+
+  
+      let newScores = {
+        [player1Data.uid]: player1Score,
+        [player2Data.uid]: player2Score
+      };
+  
+      console.log(`newScores: ${JSON.stringify(newScores)}`)
+      if (roundWinner_) {
+        if (user.uid === roomData.player1) {
+          newScores[player1Data.uid] += 1;
+          newScores[player2Data.uid] -= 1;
         } else {
-          setRoundWinner(true);
+          newScores[player1Data.uid] -= 1;
+          newScores[player2Data.uid] += 1;
         }
       } else {
-        // attacker won
-        if(toAttack) {
-          setRoundWinner(true);   
+        if (user.uid === roomData.player1) {
+          newScores[player1Data.uid] -= 1;
+          newScores[player2Data.uid] += 1;
         } else {
-          setRoundWinner(false);
+          newScores[player1Data.uid] += 1;
+          newScores[player2Data.uid] -= 1;
         }
       }
-      // display round results
-      setDisplayRoundResults(true);
-      // pause for 10 seonds and then update the scores
-      const duration = 10;
-      setTimeout(() => {
-      // Code to be executed after 10 seconds
-        setDisplayRoundResults(false);
-        const cell = document.getElementById(selectedCell);
-        if (cell) {
-          cell.style.backgroundColor = "white";
-        }
-        try {
-          console.log("Updating scores... is round winner?", roundWinner);
-          let player1Score = roomData.scores[player1Data.uid];
-          let player2Score = roomData.scores[player2Data.uid];
-          if(roundWinner) {
-            if(user.uid === roomData.player1) {
-              updateRoom(roomId, {
-                scores: {
-                  [player1Data.uid]: player1Score + 1,
-                  [player2Data.uid]: player2Score - 1,
-                },
-                attackChoice: '',
-                defenseChoice: '',
-                roundsDone: roomData.roundsDone + 1,
-                turn: !roomData.turn,
-              })
-            } else {
-              updateRoom(roomId, {
-                scores: {
-                  [player1Data.uid]: player1Score - 1,
-                  [player2Data.uid]: player2Score + 1,
-                },
-                attackChoice: '',
-                defenseChoice: '',
-                roundsDone: roomData.roundsDone + 1,
-                turn: !roomData.turn,
-              })
-            }
-          } else {
-            if(user.uid === roomData.player1) {
-              updateRoom(roomId, {
-                scores: {
-                  [player1Data.uid]: player1Score - 1,
-                  [player2Data.uid]: player2Score + 1
-                },
-                attackChoice: '',
-                defenseChoice: '',
-                roundsDone: roomData.roundsDone + 1,
-                turn: !roomData.turn,
-              })
-            } else {
-                updateRoom(roomId, {
-                scores: {
-                  [player1Data.uid]: player1Score + 1,
-                  [player2Data.uid]: player2Score - 1,
-                },
-                attackChoice: '',
-                defenseChoice: '',
-                roundsDone: roomData.roundsDone + 1,
-                turn: !roomData.turn,
-              })
-            }
-          }
-        } catch (e) {
-          console.log("Error updating scores:", e);
+      console.log(`updated newScores: ${JSON.stringify(newScores)}`)
+      updateRoom(roomId, {
+        scores: newScores,
+        attackChoice: '',
+        defenseChoice: '',
+        roundsDone: roomData.roundsDone + 1,
+        turn: !roomData.turn
+      })
+        .then(() => {
+          setReadyToAdvance(false);
+          setLocked(false);
+        })
+        .catch((error) => {
+          console.log("Error updating scores:", error);
           console.log("Game Invalid!");
-          try {
-            updateRoom(roomId, {winner: 'Invalid'});
-          } catch (e) {
-            setAdvanceRound(false); //otherwise it will keep updating scores
-            console.log("Error updating winner:", e);
-          }
-          navigate('/');
-        }
-        setAdvanceRound(false); //otherwise it will keep updating scores
-        console.log(`Pause of ${duration} seconds complete!`);
-      }, duration * 1000);
-    }
-    setReadyToAdvance(false);
-  }, [user.uid, roomData, readyToAdvance, displayWinnerMessage, roundWinner, toAttack, winner, selectedCell, navigate, roomId, player1Data, player2Data, setAdvanceRound]);
-
+          updateRoom(roomId, { winner: 'Invalid' })
+            .catch((error) => {
+              setReadyToAdvance(false);
+              console.log("Error updating winner:", error);
+            })
+            .finally(() => {
+              navigate('/');
+            });
+        });
+    };
+  
+    updateScores(roundWinner_);
+  }, [user, roomData, readyToAdvance, displayWinnerMessage, toAttack, winner, selectedCell, navigate, roomId, player1Data, player2Data]);
+  
 
   useEffect(() => {
     // handle game end
+    console.log("handling game end")
     if(!roomData)
       return;
-    if(roomData && (winner === '' || winner === null || roomData?.rounds <= 10)) {
+    if(roomData?.roundsDone < 10) {
       console.log("game not over yet, rounds done: ", roomData.roundsDone);
       return;
     }
-    console.log("game over, handling game end, updating user stats");
-    console.log(`winner: ${winner}`)
-
-    try {
-      if(roomData && roomData.roundsDone && roomData.roundsDone >= 10 && (!statsUpdated)) {
-        if(roomData.scores[roomData.player1] === roomData.scores[roomData.player2]) {
+    if(winner !== null && winner !== '') {
+      console.log("winner already set, returning");
+      return;
+    }
+    let winner_ = '';
+    console.log(`${roomData.scores[roomData.player1]} vs ${roomData.scores[roomData.player2]}`);
+    if(roomData.scores && (roomData.scores[roomData.player1] === roomData.scores[roomData.player2])) {
+          console.log(`Setting winner draw`)
+          winner_ = 'Draw';
           setWinner('Draw');
         }else {
+          winner_ = roomData.scores[roomData.player1] > roomData.scores[roomData.player2] ? roomData.player1 : roomData.player2;
           setWinner(roomData.scores[roomData.player1] > roomData.scores[roomData.player2] ? roomData.player1 : roomData.player2);
         }
-
-        if(winner === player1Data.uid) {
-          updateRoom(roomId, {winner: winner});
+    console.log("game over, handling game end, updating user stats");
+    console.log(`{roomData: ${JSON.stringify(roomData)}}`)
+    console.log(`locking game`)
+    setLocked(true);
+    console.log(`winner: ${winner}`)
+    console.log(`winner_: ${winner_}`)
+    if(!winner_ || winner_ === '') {
+      console.log(`winner_ is null or empty, returning`)
+      return;
+    }
+    try {
+      if(roomData && roomData.scores && player1Data && player1Data.uid && player2Data && player2Data.uid && roomData.roundsDone && roomData.roundsDone >= 10 && (!statsUpdated)) {
+        
+        if(winner_ === player1Data.uid) {
+          console.log(`setting winner to ${winner_}`)
+          updateRoom(roomId, {winner: winner_});
           updateUser(player1Data.uid, {gamesPlayed: player1Data.gamesPlayed + 1, gamesWon: player1Data.gamesWon + 1, totalScore: player1Data.totalScore + roomData.scores[player1Data.uid]});
           updateUser(player2Data.uid, {gamesPlayed: player2Data.gamesPlayed + 1, gamesLost: player2Data.gamesLost + 1, totalScore: player2Data.totalScore + roomData.scores[player2Data.uid]});
         }
-        else if(winner === player2Data.uid){
-          updateRoom(roomId, {winner: winner});
+        else if(winner_ === player2Data.uid){
+          console.log(`setting winner to ${winner_}`)
+          updateRoom(roomId, {winner: winner_});
           updateUser(player1Data.uid, {gamesPlayed: player1Data.gamesPlayed + 1, gamesLost: player1Data.gamesLost + 1, totalScore: player1Data.totalScore + roomData.scores[player1Data.uid]});
           updateUser(player2Data.uid, {gamesPlayed: player2Data.gamesPlayed + 1, gamesWon: player2Data.gamesWon + 1, totalScore: player2Data.totalScore + roomData.scores[player2Data.uid]});
         }
-        else if(winner === 'Draw') {
+        else if(winner_ === 'Draw') {
+          console.log(`setting winner to ${winner_}`)
           updateRoom(roomId, {winner: 'Draw'});
-          updateUser(player1Data.uid, {gamesPlayed: player1Data.gamesPlayed + 1, gamesDrawn: player1Data.gamesDrawn+ 1, totalScore: player1Data.totalScore + roomData.scores[player1Data.uid]});
-          updateUser(player2Data.uid, {gamesPlayed: player2Data.gamesPlayed + 1, gamesDrawn: player2Data.gamesWon + 1, totalScore: player2Data.totalScore + roomData.scores[player2Data.uid]});
+          updateUser(player1Data.uid, {gamesPlayed: player1Data.gamesPlayed + 1, gamesDrawn: player1Data.gamesDrawn + 1, totalScore: player1Data.totalScore + roomData.scores[player1Data.uid]});
+          updateUser(player2Data.uid, {gamesPlayed: player2Data.gamesPlayed + 1, gamesDrawn: player2Data.gamesDrawn + 1, totalScore: player2Data.totalScore + roomData.scores[player2Data.uid]});
         }
         else {
           console.log("setting winner invalid")
@@ -321,20 +332,49 @@ const GamePage = () => {
     }
   }, [roomData, player1Data, player2Data, winner, roomId, displayWinnerMessage, statsUpdated]);
 
+  useEffect(() => {
+    // remove lock if not needed
+    console.log(`checking if lock needs to be removed`)
+    console.log(`selectedCell: ${selectedCell}`)
+    if(!roomData || !locked) {
+      console.log(`either roomData is null or lock is already removed`)
+      return;
+    }
+    if(roomData.roundsDone && roomData.roundsDone >= 10) {
+      console.log(`useEffect: game over`);
+
+      return;
+    }
+    if((toAttack && roomData.attackChoice && (roomData.attackChoice === '')) || (!toAttack && roomData.defenseChoice && roomData.defenseChoice === '')) {
+      // locked but attack choice is not made
+      console.log(`useEffect: locked but choice not reflected in roomData`);
+    }
+    if((roomData.attackChoice === '' && roomData.defenseChoice === '' && !readyToAdvance)) {
+      console.log(`useEffect: removing lock`);
+      setLocked(false);
+    }
+  }, [roomData, locked, setLocked, readyToAdvance, selectedCell, toAttack]);
 
   const handleCellClick = useCallback((matrix, row, col) => {
     // Handle the logic for cell click event
+    if(locked) {
+      console.log(`handleCellClick: locked: ${locked}`);
+      return;
+    }
     if(winner) {
       displayWinnerMessage();
+      return;
+    }
+    if(readyToAdvance || locked) {
       return;
     }
     if(matrix < 0 || matrix > 1 || col < 0 || col > 2 || row < 0 || row > 2) {
       setMessage('Invalid cell');
     }
-    if((toAttack && roomData.attackChoice && roomData.attackChoice !== '') || (!toAttack && roomData.defenseChoice && roomData.defenseChoice !== '')) {
-      setMessage('You have already locked your choice');
-      return;
-    }
+    // if((toAttack && roomData.attackChoice && roomData.attackChoice !== '') || (!toAttack && roomData.defenseChoice && roomData.defenseChoice !== '')) {
+    //   setMessage('You have already locked your choice');
+    //   return;
+    // }
     const clearSelectedCell = () => {
       if(selectedCell) {
         const cell = document.getElementById(selectedCell);
@@ -383,53 +423,40 @@ const GamePage = () => {
         setSelectedCell(cellName)
       }
     }
-  }, [roomData, toAttack, winner, selectedCell, displayWinnerMessage]);
+  }, [roomData, toAttack, winner, selectedCell, locked, readyToAdvance, displayWinnerMessage]);
 
     const lockChoice = useCallback(() => {
-    if(toAttack) {
+    if(locked || !roomData)
+      return;
+    setLocked(true);
+    console.log(`lockChoice: toAttack : ${toAttack}, locked: ${locked}`);
+    if(toAttack && !locked) {
       updateRoom(roomId, {
         attackChoice: selectedCell,
-      });
-      if(selectedCell) {
-        const cell = document.getElementById(selectedCell);
-        if(cell) {
-          cell.style.backgroundColor = 'red';
+      })
+      .then(() => {
+        if(selectedCell) {
+          const cell = document.getElementById(selectedCell);
+          if(cell) {
+            cell.style.backgroundColor = 'pink';
+          }
         }
-      }
+      });
     } else {
       updateRoom(roomId, {
         defenseChoice: selectedCell,
-      });
+      })
+      .then(() => {
       if(selectedCell) {
         const cell = document.getElementById(selectedCell);
         if(cell) {
-          cell.style.backgroundColor = 'blue';
+          cell.style.backgroundColor = 'violet';
         }
       }
+      });
     }
-    setLocked(true);
     setMessage('Choice locked at ' + selectedCell);
-  }, [roomId, selectedCell, toAttack]);
-
-    useEffect(() => {
-    // to clear lock when next round has started
-    if(winner) {
-      displayWinnerMessage();
-      return;
-    }
-    if(locked) {
-      if(toAttack && !roomData.attackChoice) {
-        setLocked(false);
-        return;
-      }
-      if(!toAttack && !roomData.defenseChoice) {
-        setLocked(false);
-        return;
-      } 
-    }
-  }, [locked, setLocked, lockChoice, selectedCell, toAttack, winner, displayWinnerMessage, roomData]);
-
-
+  }, [roomId, selectedCell, locked, roomData, toAttack]);
 
     const printScores = () => {
     if (!player1Data|| !player2Data || !roomData) {
@@ -470,9 +497,10 @@ const handleVoiceCommand = (transcript) => {
     console.log('handleVoiceCommand: row:', row)
     console.log('handleVoiceCommand: col:', col)
 
+    // const attackTurn = roomData.turn && (roomData.player1 === user.uid);
     if (toAttack && action !== 'attack') {
       console.log('You can only attack!');
-      setMessage('You can only attack!');
+      setMessage('You can only attack!')
       return;
     } else if (!toAttack && action !== 'defend') {
       console.log('You can only defend!');
@@ -513,11 +541,11 @@ const handleVoiceButton = () => {
   return (
     <div>
       <div className="pageHeading"><h1>Game Page</h1></div>
-      {message && <div className="message">{message}</div>}
       {roomData && <div className="rounds"><h2>{roomData.roundsDone < 10 ? `Round: ${roomData.roundsDone + 1}` : "Game Over"}</h2></div>}
-      {winner && <div className={(winner === user.uid) ? 'winner-box' : 'loser-box'}><h2>{(winner === user.uid) ? "You Won"  : "You Lost"}</h2></div>}
+      {winner && <div className={(winner === user.uid) ? 'winner-box' : 'loser-box'}><h2>{(winner === 'Draw' ? "Draw" : ((winner === user.uid) ? "You Won"  : "You Lost"))}</h2></div>}
       {roomData && <div className="scores"><h2>{printScores()}</h2></div>}
-      {displayRoundResults ? <WinnerLoserElement winner={roundWinner} /> : null}
+      {/* {displayRoundResults ? <WinnerLoserElement winner={roundWinner} /> : null} */}
+      {message && <div className="message">{message}</div>}
       {roomData && (
         <div className="matrix-container">
           <table className="matrix" border="2px solid black;">
@@ -544,7 +572,7 @@ const handleVoiceButton = () => {
       )}
       {locked && !winner && <div className="locked"> Choice Locked </div>}
       <div className="actionButton"> 
-        <button onClick={() => {lockChoice()}} disabled={locked}>{toAttack ? "Attack" : "Defend"} </button>
+        {roomData && user && <button onClick={() => {lockChoice()}} disabled={locked}>{toAttack ? "Attack" : "Defend"} </button>}
         <button onClick={handleVoiceButton} disabled={listening || locked}> 
         <i className="fa fa-microphone"></i> Voice Command
         </button>
